@@ -285,9 +285,9 @@ class SsoHelper
     {
         $response = Http::withoutVerifying()
                         ->post($this->configuration['logout_endpoint'], [
-                            'sub'          => sprintf('%s##%s', $username, (string)$identifyCode),
-                            'clientId'     => $this->clientId,
-                            'clientSecret' => $this->clientSecret
+                            'sub'          => sprintf('%s##%s', $username, $identifyCode),
+                            'client_id'     => $this->clientId,
+                            'client_secret' => $this->clientSecret
                         ])
                         ->json();
 
