@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::create('sso_attempts', function (Blueprint $table) {
             $table->id();
-            $table->integer('user_id')->nullable();
+            $table->bigInteger('user_id')->unsigned()->nullable();
             $table->uuid('state');
             $table->string('url', 2000);
             $table->ipAddress();
