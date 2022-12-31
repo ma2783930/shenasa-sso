@@ -30,23 +30,23 @@ class SsoHelper
     /**
      * Base URL of SSO server
      *
-     * @var string
+     * @var string|null
      */
-    private string $baseAddress;
+    private string|null $baseAddress;
 
     /**
      * Client-ID of SSO account
      *
-     * @var string
+     * @var string|null
      */
-    private string $clientId;
+    private string|null $clientId;
 
     /**
      * Client-Secret of SSO account
      *
-     * @var string
+     * @var string|null
      */
-    private string $clientSecret;
+    private string|null $clientSecret;
 
     /**
      * Callback URL for redirect after SSO operation
@@ -292,7 +292,11 @@ class SsoHelper
                         ->json();
 
         dd(
-            $response
+            [
+                'sub'          => sprintf('%s##%s', $username, $identifyCode),
+                'client_id'     => $this->clientId,
+                'client_secret' => $this->clientSecret
+            ]
         );
     }
 
