@@ -333,7 +333,9 @@ class SsoHelper
         $this->clientId     = $options['clientId'];
         $this->clientSecret = $this->createClientSecretHash($options['clientSecret']);
 
-        $this->configuration = $this->getOpenIdConfiguration();
+        if ($this->enable && !empty($this->baseAddress)) {
+            $this->configuration = $this->getOpenIdConfiguration();
+        }
     }
 
     /**
