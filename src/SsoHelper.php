@@ -285,7 +285,7 @@ class SsoHelper
     {
         $response = Http::withoutVerifying()
                         ->post($this->configuration['logout_endpoint'], [
-                            'sub'          => sprintf('%s##%s', $username, $identifyCode),
+                            'sub'           => sprintf('%s##%s', $username, $identifyCode),
                             'client_id'     => $this->clientId,
                             'client_secret' => $this->clientSecret
                         ])
@@ -293,7 +293,7 @@ class SsoHelper
 
         dd(
             [
-                'sub'          => sprintf('%s##%s', $username, $identifyCode),
+                'sub'           => sprintf('%s##%s', $username, $identifyCode),
                 'client_id'     => $this->clientId,
                 'client_secret' => $this->clientSecret
             ]
@@ -365,11 +365,19 @@ class SsoHelper
      */
     private function getOpenIdConfiguration(): array
     {
-        return Http::withoutVerifying()
-                   ->get(
-                       sprintf("%s%s", $this->baseAddress, $this->openidConfigurationUri)
-                   )
-                   ->json();
+        try {
+            return Http::withoutVerifying()
+                       ->retry(0)
+                       ->connectTimeout(3)
+                       ->timeout(3)
+                       ->get(
+                           sprintf("%s%s", $this->baseAddress, $this->openidConfigurationUri)
+                       )
+                       ->json();
+        } catch (Exception $exception) {
+            $this->enable = false;
+            return [];
+        }
     }
 
     /**
