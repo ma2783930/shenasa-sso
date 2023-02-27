@@ -1,5 +1,7 @@
 <?php
 
+/** @noinspection PhpUnused */
+
 namespace Shenasa;
 
 use Carbon\Carbon;
@@ -25,7 +27,7 @@ class SsoHelper
      *
      * @var bool
      */
-    private bool $enable = false;
+    private bool $enable;
 
     /**
      * Base URL of SSO server
@@ -93,10 +95,6 @@ class SsoHelper
         $this->clientSecret = $this->createClientSecretHash(config('sso.client_secret'));
         $this->baseAddress  = config('sso.base_address');
         $this->redirectUri  = sprintf('%s/%s', config('app.url'), config('sso.callback_url'));
-
-        if ($this->enable && !!$this->baseAddress) {
-            $this->configuration = $this->getOpenIdConfiguration();
-        }
     }
 
     /**
@@ -176,7 +174,7 @@ class SsoHelper
             $this->redirectUri
         );
 
-        $this->logAttempt('login', $state, $login_url);
+        $this->logAttempt($state, $login_url);
 
         return $login_url;
     }
@@ -192,13 +190,15 @@ class SsoHelper
      */
     public function validateLoginCode($state, $code, SsoUserFinderAction $userFinderAction): bool|array
     {
-        $ssoAttempt = SsoAttempt::whereState((string)$state)
+        $ssoAttempt = SsoAttempt::where('state', (string)$state)
                                 ->whereNull('is_successful')
                                 ->first();
 
         if (empty($ssoAttempt)) {
             return false;
         }
+
+        $this->configuration = $this->getOpenIdConfiguration();
 
         $response = Http::withoutVerifying()
                         ->asForm()
@@ -237,12 +237,11 @@ class SsoHelper
                 $data           = (array)JWT::decode($token, $this->getCertificate());
                 [$username, $identifyCode] = explode('##', $data['sub']);
                 $user = call_user_func($userFinderAction, $username, $identifyCode);
-            } catch (Exception $exception) {
+            } catch (Exception) {
                 return false;
             }
 
             $hasValidToken = true;
-            $hasValidUser  = true;
 
             if (
                 Carbon::createFromTimestampMs($decodedToken['exp'])->isPast() ||
@@ -254,26 +253,12 @@ class SsoHelper
                 $hasValidToken = false;
             }
 
+            $hasValidUser = !!$user;
 
-            if (empty($user)) {
-                $hasValidUser = false;
-            }
+            $ssoAttempt->update(['is_successful' => $hasValidToken && $hasValidUser]);
 
-            $ssoAttempt->update([
-                'is_successful' => $hasValidToken && $hasValidUser
-            ]);
-
-            abort_if(
-                !$hasValidToken,
-                400,
-                trans('sso::messages.invalid_token')
-            );
-
-            abort_if(
-                !$hasValidUser,
-                400,
-                trans('sso::messages.invalid_user')
-            );
+            abort_if(!$hasValidToken, 400, trans('sso::messages.invalid_token'));
+            abort_if(!$hasValidUser, 400, trans('sso::messages.invalid_user'));
 
             return [$user, $username, $identifyCode];
         }
@@ -281,9 +266,10 @@ class SsoHelper
         return false;
     }
 
-    public function logout($username, $identifyCode)
+    //TODO: Logout operation will be implemented later
+    public function logout($username, $identifyCode): void
     {
-        $response = Http::withoutVerifying()
+        Http::withoutVerifying()
                         ->post($this->configuration['logout_endpoint'], [
                             'sub'           => sprintf('%s##%s', $username, $identifyCode),
                             'client_id'     => $this->clientId,
@@ -291,13 +277,13 @@ class SsoHelper
                         ])
                         ->json();
 
-        dd(
-            [
+
+            /*[
                 'sub'           => sprintf('%s##%s', $username, $identifyCode),
                 'client_id'     => $this->clientId,
                 'client_secret' => $this->clientSecret
-            ]
-        );
+            ]*/
+
     }
 
     /**
@@ -332,10 +318,6 @@ class SsoHelper
         $this->enable       = $options['enable'];
         $this->clientId     = $options['clientId'];
         $this->clientSecret = $this->createClientSecretHash($options['clientSecret']);
-
-        if ($this->enable && !empty($this->baseAddress)) {
-            $this->configuration = $this->getOpenIdConfiguration();
-        }
     }
 
     /**
@@ -365,19 +347,14 @@ class SsoHelper
      */
     private function getOpenIdConfiguration(): array
     {
-        try {
-            return Http::withoutVerifying()
-                       ->retry(0)
-                       ->connectTimeout(3)
-                       ->timeout(3)
-                       ->get(
-                           sprintf("%s%s", $this->baseAddress, $this->openidConfigurationUri)
-                       )
-                       ->json();
-        } catch (Exception $exception) {
-            $this->enable = false;
-            return [];
-        }
+        return Http::withoutVerifying()
+                   ->retry(1)
+                   ->connectTimeout(3)
+                   ->timeout(3)
+                   ->get(
+                       sprintf("%s%s", $this->baseAddress, $this->openidConfigurationUri)
+                   )
+                   ->json();
     }
 
     /**
@@ -393,15 +370,14 @@ class SsoHelper
     }
 
     /**
-     * @param string $type
      * @param string $state
      * @param string $url
      * @return void
      */
-    private function logAttempt(string $type, string $state, string $url): void
+    private function logAttempt(string $state, string $url): void
     {
         SsoAttempt::create([
-            'type'       => $type,
+            'type'       => 'login',
             'state'      => $state,
             'url'        => $url,
             'ip_address' => Request::ip(),
