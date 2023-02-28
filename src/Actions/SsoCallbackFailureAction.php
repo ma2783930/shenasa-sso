@@ -13,7 +13,7 @@ class SsoCallbackFailureAction implements SsoCallbackFailureHandlerContract
     public function __invoke(Request $request)
     {
         abort(
-            400,
+            500,
             "SSO Unhandled Exception..."
         );
     }

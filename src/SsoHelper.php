@@ -257,8 +257,8 @@ class SsoHelper
 
             $ssoAttempt->update(['is_successful' => $hasValidToken && $hasValidUser]);
 
-            abort_if(!$hasValidToken, 400, trans('sso::messages.invalid_token'));
-            abort_if(!$hasValidUser, 400, trans('sso::messages.invalid_user'));
+            abort_if(!$hasValidToken, 500, trans('sso::messages.invalid_token'));
+            abort_if(!$hasValidUser, 500, trans('sso::messages.invalid_user'));
 
             return [$user, $username, $identifyCode];
         }
@@ -357,7 +357,7 @@ class SsoHelper
                        )
                        ->json();
         } catch (Exception) {
-            abort(400, trans('sso::messages.connection_timeout'));
+            abort(500, trans('sso::messages.connection_timeout'));
         }
     }
 
