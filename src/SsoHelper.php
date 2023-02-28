@@ -357,7 +357,7 @@ class SsoHelper
                        )
                        ->json();
         } catch (Exception) {
-            abort(400, __('messages.connection_timeout'));
+            abort(400, __('shenasa-sso:messages.connection_timeout'));
         }
     }
 
