@@ -347,14 +347,18 @@ class SsoHelper
      */
     private function getOpenIdConfiguration(): array
     {
-        return Http::withoutVerifying()
-                   ->retry(1)
-                   ->connectTimeout(3)
-                   ->timeout(3)
-                   ->get(
-                       sprintf("%s%s", $this->baseAddress, $this->openidConfigurationUri)
-                   )
-                   ->json();
+        try {
+            return Http::withoutVerifying()
+                       ->retry(1)
+                       ->connectTimeout(3)
+                       ->timeout(3)
+                       ->get(
+                           sprintf("%s%s", $this->baseAddress, $this->openidConfigurationUri)
+                       )
+                       ->json();
+        } catch (Exception) {
+            abort(400, __('messages.connection_timeout'));
+        }
     }
 
     /**
