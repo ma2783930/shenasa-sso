@@ -10,7 +10,10 @@ use Shenasa\Actions\SsoCallbackFailureAction;
 use Shenasa\Actions\SsoLoginAction;
 use Shenasa\Actions\SsoLogoutAction;
 use Shenasa\Actions\SsoUserFinderAction;
+use Shenasa\Exceptions\LoginException;
+use Shenasa\Exceptions\UnhandledException;
 use Shenasa\Facades\Sso;
+use Exception;
 
 class SsoAuthController extends BaseController
 {
@@ -43,6 +46,8 @@ class SsoAuthController extends BaseController
      * @param \Shenasa\Actions\SsoLoginAction           $ssoLoginAction
      * @param \Shenasa\Actions\SsoCallbackFailureAction $callbackFailureAction
      * @return mixed
+     * @throws \Shenasa\Exceptions\UnhandledException
+     * @throws \Shenasa\Exceptions\LoginException
      */
     public function callback(Request $request, SsoUserFinderAction $userFinderAction, SsoLoginAction $ssoLoginAction, SsoCallbackFailureAction $callbackFailureAction)
     {
@@ -52,10 +57,14 @@ class SsoAuthController extends BaseController
         $userInfo = Sso::validateLoginCode($state, $code, $userFinderAction);
 
         if (!!$userInfo) {
-            [$user, $username, $identifyCode] = $userInfo;
-            return call_user_func($ssoLoginAction, $request, $user, $username, $identifyCode);
+            try {
+                [$user, $username, $identifyCode] = $userInfo;
+                return call_user_func($ssoLoginAction, $request, $user, $username, $identifyCode);
+            } catch (Exception) {
+                throw new LoginException;
+            }
         }
 
-        return call_user_func($callbackFailureAction, $request);
+        throw new UnhandledException;
     }
 }

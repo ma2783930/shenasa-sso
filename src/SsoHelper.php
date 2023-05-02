@@ -18,6 +18,17 @@ use Shenasa\Actions\SsoCallbackFailureAction;
 use Shenasa\Actions\SsoLoginAction;
 use Shenasa\Actions\SsoLogoutAction;
 use Shenasa\Actions\SsoUserFinderAction;
+use Shenasa\Exceptions\AttemptLoggerException;
+use Shenasa\Exceptions\CallbackResponseException;
+use Shenasa\Exceptions\CertificateProviderException;
+use Shenasa\Exceptions\ConfigurationException;
+use Shenasa\Exceptions\InvalidAttemptException;
+use Shenasa\Exceptions\InvalidCallbackResponseException;
+use Shenasa\Exceptions\InvalidTokenException;
+use Shenasa\Exceptions\InvalidUserException;
+use Shenasa\Exceptions\RemoteConfigurationException;
+use Shenasa\Exceptions\TokenParserException;
+use Shenasa\Exceptions\UserGetterException;
 use Shenasa\Models\SsoAttempt;
 
 class SsoHelper
@@ -154,6 +165,8 @@ class SsoHelper
      * Generates login url for redirection
      *
      * @return string
+     * @throws \Shenasa\Exceptions\RemoteConfigurationException
+     * @throws \Shenasa\Exceptions\AttemptLoggerException
      */
     public function generateLoginUrl(): string
     {
@@ -180,13 +193,20 @@ class SsoHelper
     }
 
     /**
-     * Validates response code.
+     *      * Validates response code.
      * Returns attempt type, user, username and identify code with successful validation and false with unsuccessful validation
-     *
      * @param                                      $state
      * @param                                      $code
      * @param \Shenasa\Actions\SsoUserFinderAction $userFinderAction
      * @return bool|array
+     * @throws \Shenasa\Exceptions\CallbackResponseException
+     * @throws \Shenasa\Exceptions\InvalidAttemptException
+     * @throws \Shenasa\Exceptions\InvalidCallbackResponseException
+     * @throws \Shenasa\Exceptions\InvalidTokenException
+     * @throws \Shenasa\Exceptions\RemoteConfigurationException
+     * @throws \Shenasa\Exceptions\UserGetterException
+     * @throws \Shenasa\Exceptions\TokenParserException
+     * @throws \Throwable
      */
     public function validateLoginCode($state, $code, SsoUserFinderAction $userFinderAction): bool|array
     {
@@ -195,24 +215,28 @@ class SsoHelper
                                 ->first();
 
         if (empty($ssoAttempt)) {
-            return false;
+            throw new InvalidAttemptException;
         }
 
         $this->configuration = $this->getOpenIdConfiguration();
 
-        $response = Http::withoutVerifying()
-                        ->asForm()
-                        ->post(
-                            sprintf("%s", $this->configuration['token_endpoint']),
-                            [
-                                "grant_type"    => "authorization_code",
-                                "code"          => $code,
-                                "redirect_uri"  => $this->redirectUri,
-                                "client_id"     => $this->clientId,
-                                "client_secret" => $this->clientSecret
-                            ]
-                        )
-                        ->json();
+        try {
+            $response = Http::withoutVerifying()
+                            ->asForm()
+                            ->post(
+                                sprintf("%s", $this->configuration['token_endpoint']),
+                                [
+                                    "grant_type"    => "authorization_code",
+                                    "code"          => $code,
+                                    "redirect_uri"  => $this->redirectUri,
+                                    "client_id"     => $this->clientId,
+                                    "client_secret" => $this->clientSecret
+                                ]
+                            )
+                            ->json();
+        } catch (Exception) {
+            throw new CallbackResponseException;
+        }
 
         if (isset($response['jws'])) {
             $token        = $response['jws'];
@@ -232,13 +256,18 @@ class SsoHelper
             );
 
             try {
-                JWT::$leeway    = 5000;
+                JWT::$leeway    = 30000;
                 JWT::$timestamp = Carbon::now()->getTimestampMs();
                 $data           = (array)JWT::decode($token, $this->getCertificate());
                 [$username, $identifyCode] = explode('##', $data['sub']);
+            } catch (Exception) {
+                throw new TokenParserException;
+            }
+
+            try {
                 $user = call_user_func($userFinderAction, $username, $identifyCode);
             } catch (Exception) {
-                return false;
+                throw new UserGetterException;
             }
 
             $hasValidToken = true;
@@ -257,13 +286,13 @@ class SsoHelper
 
             $ssoAttempt->update(['is_successful' => $hasValidToken && $hasValidUser]);
 
-            abort_if(!$hasValidToken, 500, trans('sso::messages.invalid_token'));
-            abort_if(!$hasValidUser, 500, trans('sso::messages.invalid_user'));
+            throw_if(!$hasValidUser, InvalidUserException::class);
+            throw_if(!$hasValidToken, InvalidTokenException::class);
 
             return [$user, $username, $identifyCode];
         }
 
-        return false;
+        throw new InvalidCallbackResponseException;
     }
 
     //TODO: Logout operation will be implemented later
@@ -311,7 +340,7 @@ class SsoHelper
             !isset($options['clientId']) ||
             !isset($options['clientSecret'])
         ) {
-            throw new Exception('All of baseUrl, clientId and clientSecret are mandatory');
+            throw new ConfigurationException;
         }
 
         $this->baseAddress  = $options['baseUrl'];
@@ -344,6 +373,7 @@ class SsoHelper
      * Get Open-ID configuration
      *
      * @return array
+     * @throws \Shenasa\Exceptions\RemoteConfigurationException
      */
     private function getOpenIdConfiguration(): array
     {
@@ -357,18 +387,23 @@ class SsoHelper
                        )
                        ->json();
         } catch (Exception) {
-            abort(500, trans('sso::messages.connection_timeout'));
+            throw new RemoteConfigurationException;
         }
     }
 
     /**
      * @return \Firebase\JWT\Key
+     * @throws \Shenasa\Exceptions\CertificateProviderException
      */
     private function getCertificate(): Key
     {
-        $certificateKeys = Http::withoutVerifying()
-                               ->get($this->configuration['jwks_uri'])
-                               ->json('keys');
+        try {
+            $certificateKeys = Http::withoutVerifying()
+                                   ->get($this->configuration['jwks_uri'])
+                                   ->json('keys');
+        } catch (Exception) {
+            throw new CertificateProviderException;
+        }
 
         return JWK::parseKey($certificateKeys[0], 'RS256');
     }
@@ -377,16 +412,21 @@ class SsoHelper
      * @param string $state
      * @param string $url
      * @return void
+     * @throws \Shenasa\Exceptions\AttemptLoggerException
      */
     private function logAttempt(string $state, string $url): void
     {
-        SsoAttempt::create([
-            'type'       => 'login',
-            'state'      => $state,
-            'url'        => $url,
-            'ip_address' => Request::ip(),
-            'expired_at' => Carbon::now()->addMinutes(30)
-        ]);
+        try {
+            SsoAttempt::create([
+                'type'       => 'login',
+                'state'      => $state,
+                'url'        => $url,
+                'ip_address' => Request::ip(),
+                'expired_at' => Carbon::now()->addMinutes(30)
+            ]);
+        } catch (Exception) {
+            throw new AttemptLoggerException;
+        }
     }
 
     /**
