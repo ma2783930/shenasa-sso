@@ -255,10 +255,12 @@ class SsoHelper
                 true
             );
 
+            $certificate = $this->getCertificate();
+
             try {
                 JWT::$leeway    = 30000;
                 JWT::$timestamp = Carbon::now()->getTimestampMs();
-                $data           = (array)JWT::decode($token, $this->getCertificate());
+                $data           = (array)JWT::decode($token, $certificate);
                 [$username, $identifyCode] = explode('##', $data['sub']);
             } catch (Exception) {
                 throw new TokenParserException;
