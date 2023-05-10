@@ -358,7 +358,7 @@ class SsoHelper
      */
     public function getLoginUrl(): string
     {
-        return URL::route('sso-auth.login');
+        return URL::route('sso-auth.login', [], false);
     }
 
     /**
@@ -368,7 +368,7 @@ class SsoHelper
      */
     public function getLogoutUrl(): string
     {
-        return URL::route('sso-auth.logout');
+        return URL::route('sso-auth.logout', [], false);
     }
 
     /**
