@@ -35,7 +35,7 @@ class SsoAuthController extends BaseController
     {
         return response()->json([
             'enabled'   => Sso::getIsEnable(),
-            'login_url' => Sso::getLoginUrl()
+            'login_url' => Sso::generateLoginUrl()
         ]);
     }
 
