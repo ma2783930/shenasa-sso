@@ -7,17 +7,17 @@ use Shenasa\Http\Controllers\SsoAuthController;
 if (Sso::getIsEnable()) {
     Route::name('sso-auth.')
          ->controller(SsoAuthController::class)
-         ->middleware(config('sso.web_middleware') ? 'web' : [])
+         ->middleware(config('sso.middlewares.web') ? 'web' : [])
          ->group(function () {
              Route::middleware('guest')->group(function () {
-                 Route::get(config('sso.get_state_route'), 'state')->name('state');
-                 Route::post(config('sso.async_login_route'), 'asyncLogin')->name('async-login');
-                 Route::get(config('sso.login_route'), 'login')->name('login');
-                 Route::get(config('sso.callback_route'), 'callback')->name('callback');
+                 Route::get(config('sso.routes.login_get'), 'getLogin')->name('get-login-url');
+                 Route::post(config('sso.routes.login_verify'), 'verifyLogin')->name('verify-login');
+                 Route::get(config('sso.routes.login_redirect'), 'loginRedirect')->name('login');
+                 Route::get(config('sso.routes.login_callback'), 'callback')->name('callback');
              });
 
-             Route::middleware(config('sso.auth_middleware'))->group(function () {
-                 Route::get(config('sso.logout_route'), 'logout')->name('logout');
+             Route::middleware(config('sso.middlewares.auth'))->group(function () {
+                 Route::get(config('sso.routes.logout'), 'logout')->name('logout');
              });
          });
 }

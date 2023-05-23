@@ -21,7 +21,7 @@ class SsoAuthController extends BaseController
     /**
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function login()
+    public function loginRedirect()
     {
         return Redirect::to(
             Sso::generateLoginUrl()
@@ -31,10 +31,9 @@ class SsoAuthController extends BaseController
     /**
      * @return \Illuminate\Http\JsonResponse
      */
-    public function state()
+    public function getLogin()
     {
         return response()->json([
-            'enabled'   => Sso::getIsEnable(),
             'login_url' => Sso::generateLoginUrl()
         ]);
     }
@@ -48,7 +47,7 @@ class SsoAuthController extends BaseController
      * @throws \Shenasa\Exceptions\LoginException
      * @throws \Shenasa\Exceptions\UnhandledException
      */
-    public function asyncLogin(Request $request, SsoUserFinderContract $userFinderAction, SsoAsyncLoginContract $asyncLoginAction)
+    public function verifyLogin(Request $request, SsoUserFinderContract $userFinderAction, SsoAsyncLoginContract $asyncLoginAction)
     {
         validator()
             ->make($request->all(), [

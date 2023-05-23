@@ -102,10 +102,10 @@ class SsoHelper
     public function __construct()
     {
         $this->enable       = config('sso.enable');
-        $this->clientId     = config('sso.client_id');
-        $this->clientSecret = $this->createClientSecretHash(config('sso.client_secret'));
-        $this->baseAddress  = config('sso.base_address');
-        $this->redirectUri  = sprintf('%s/%s', config('app.url'), config('sso.callback_url'));
+        $this->clientId     = config('sso.server.client_id');
+        $this->clientSecret = $this->createClientSecretHash(config('sso.server.client_secret'));
+        $this->baseAddress  = config('sso.server.base_address');
+        $this->redirectUri  = sprintf('%s/%s', config('app.url'), config('sso.routes.login_callback'));
     }
 
     /**
@@ -301,19 +301,19 @@ class SsoHelper
     public function logout($username, $identifyCode): void
     {
         Http::withoutVerifying()
-                        ->post($this->configuration['logout_endpoint'], [
-                            'sub'           => sprintf('%s##%s', $username, $identifyCode),
-                            'client_id'     => $this->clientId,
-                            'client_secret' => $this->clientSecret
-                        ])
-                        ->json();
-
-
-            /*[
+            ->post($this->configuration['logout_endpoint'], [
                 'sub'           => sprintf('%s##%s', $username, $identifyCode),
                 'client_id'     => $this->clientId,
                 'client_secret' => $this->clientSecret
-            ]*/
+            ])
+            ->json();
+
+
+        /*[
+            'sub'           => sprintf('%s##%s', $username, $identifyCode),
+            'client_id'     => $this->clientId,
+            'client_secret' => $this->clientSecret
+        ]*/
 
     }
 
@@ -356,7 +356,7 @@ class SsoHelper
      *
      * @return string
      */
-    public function getLoginUrl(): string
+    public function getLoginRedirectRoute(): string
     {
         return URL::route('sso-auth.login', [], false);
     }

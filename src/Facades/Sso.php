@@ -16,7 +16,7 @@ use Shenasa\Actions\SsoUserFinderAction;
  * @method static mixed callbackFailureHandlerUsing(string $callback)
  * @method static bool getIsEnable()
  * @method static void setOptions(array $options)
- * @method static string getLoginUrl()
+ * @method static string getLoginRedirectRoute()
  * @method static string getLogoutUrl()
  * @method static bool logout(string $username, string $identifyCode)
  */
