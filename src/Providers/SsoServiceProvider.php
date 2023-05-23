@@ -4,14 +4,16 @@ namespace Shenasa\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Shenasa\Actions\SsoActiveUserProviderAction;
+use Shenasa\Actions\SsoAsyncLogin;
 use Shenasa\Actions\SsoCallbackFailureAction;
-use Shenasa\Actions\SsoLoginAction;
-use Shenasa\Actions\SsoLogoutAction;
+use Shenasa\Actions\SsoLogin;
+use Shenasa\Actions\SsoLogout;
 use Shenasa\Actions\SsoUserFinderAction;
 use Shenasa\Contracts\SsoActiveUserProviderContract;
-use Shenasa\Contracts\SsoCallbackFailureHandlerContract;
-use Shenasa\Contracts\SsoLoginActionContract;
-use Shenasa\Contracts\SsoLogoutActionContract;
+use Shenasa\Contracts\SsoAsyncLoginContract;
+use Shenasa\Contracts\SsoCallbackFailureContract;
+use Shenasa\Contracts\SsoLoginContract;
+use Shenasa\Contracts\SsoLogoutContract;
 use Shenasa\Contracts\SsoUserFinderContract;
 use Shenasa\SsoHelper;
 
@@ -24,14 +26,13 @@ class SsoServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind('sso', function () {
-            return new SsoHelper;
-        });
+        $this->app->bind('sso', fn() => new SsoHelper);
 
-        $this->app->singleton(SsoLoginActionContract::class, SsoLoginAction::class);
-        $this->app->singleton(SsoLogoutActionContract::class, SsoLogoutAction::class);
+        $this->app->singleton(SsoLoginContract::class, SsoLogin::class);
+        $this->app->singleton(SsoAsyncLoginContract::class, SsoAsyncLogin::class);
+        $this->app->singleton(SsoLogoutContract::class, SsoLogout::class);
         $this->app->singleton(SsoUserFinderContract::class, SsoUserFinderAction::class);
-        $this->app->singleton(SsoCallbackFailureHandlerContract::class, SsoCallbackFailureAction::class);
+        $this->app->singleton(SsoCallbackFailureContract::class, SsoCallbackFailureAction::class);
         $this->app->singleton(SsoActiveUserProviderContract::class, SsoActiveUserProviderAction::class);
     }
 
@@ -47,8 +48,7 @@ class SsoServiceProvider extends ServiceProvider
         );
 
         $this->publishes([
-//            __DIR__ . '/../../database/migrations' => database_path('migrations'),
-            __DIR__ . '/../../config/sso.php'      => config_path('sso.php')
+            __DIR__ . '/../../config/sso.php' => config_path('sso.php')
         ], 'shenasa-sso');
 
         $this->loadMigrationsFrom(__DIR__ . '/../../database/migrations');

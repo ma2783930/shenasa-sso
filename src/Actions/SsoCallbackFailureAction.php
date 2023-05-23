@@ -3,9 +3,9 @@
 namespace Shenasa\Actions;
 
 use Illuminate\Http\Request;
-use Shenasa\Contracts\SsoCallbackFailureHandlerContract;
+use Shenasa\Contracts\SsoCallbackFailureContract;
 
-class SsoCallbackFailureAction implements SsoCallbackFailureHandlerContract
+class SsoCallbackFailureAction implements SsoCallbackFailureContract
 {
     /**
      * @param \Illuminate\Http\Request $request

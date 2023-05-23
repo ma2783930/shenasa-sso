@@ -15,8 +15,8 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Shenasa\Actions\SsoActiveUserProviderAction;
 use Shenasa\Actions\SsoCallbackFailureAction;
-use Shenasa\Actions\SsoLoginAction;
-use Shenasa\Actions\SsoLogoutAction;
+use Shenasa\Actions\SsoLogin;
+use Shenasa\Actions\SsoLogout;
 use Shenasa\Actions\SsoUserFinderAction;
 use Shenasa\Exceptions\AttemptLoggerException;
 use Shenasa\Exceptions\CallbackResponseException;
@@ -127,7 +127,7 @@ class SsoHelper
      */
     public function loginUsing(string $callback): void
     {
-        app()->singleton(SsoLoginAction::class, $callback);
+        app()->singleton(SsoLogin::class, $callback);
     }
 
     /**
@@ -138,7 +138,7 @@ class SsoHelper
      */
     public function logoutUsing(string $callback): void
     {
-        app()->singleton(SsoLogoutAction::class, $callback);
+        app()->singleton(SsoLogout::class, $callback);
     }
 
     /**

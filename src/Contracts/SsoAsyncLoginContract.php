@@ -3,14 +3,15 @@
 namespace Shenasa\Contracts;
 
 use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 
-interface SsoLogoutActionContract
+interface SsoAsyncLoginContract
 {
     /**
+     * @param \Illuminate\Http\Request                   $request
      * @param \Illuminate\Contracts\Auth\Authenticatable $user
      * @param string                                     $username
      * @param string                                     $identifyCode
      */
-    public function __invoke(Authenticatable $user, string $username, string $identifyCode);
+    public function __invoke(Request $request, Authenticatable $user, string $username, string $identifyCode);
 }

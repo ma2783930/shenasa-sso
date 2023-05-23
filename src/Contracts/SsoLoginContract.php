@@ -1,12 +1,11 @@
 <?php
 
-namespace Shenasa\Actions;
+namespace Shenasa\Contracts;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
-use Shenasa\Contracts\SsoLoginActionContract;
 
-class SsoLoginAction implements SsoLoginActionContract
+interface SsoLoginContract
 {
     /**
      * @param \Illuminate\Http\Request                   $request
@@ -14,8 +13,5 @@ class SsoLoginAction implements SsoLoginActionContract
      * @param string                                     $username
      * @param string                                     $identifyCode
      */
-    public function __invoke(Request $request, Authenticatable $user, string $username, string $identifyCode)
-    {
-        //
-    }
+    public function __invoke(Request $request, Authenticatable $user, string $username, string $identifyCode);
 }

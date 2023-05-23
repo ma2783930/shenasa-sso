@@ -4,7 +4,7 @@ namespace Shenasa\Contracts;
 
 use Illuminate\Http\Request;
 
-interface SsoCallbackFailureHandlerContract
+interface SsoCallbackFailureContract
 {
     /**
      * @param \Illuminate\Http\Request $request
