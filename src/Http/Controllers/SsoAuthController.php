@@ -6,9 +6,8 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Redirect;
-use Shenasa\Actions\SsoLogout;
+use Shenasa\Contracts\SsoLogoutContract;
 use Shenasa\Contracts\SsoActiveUserProviderContract;
-use Shenasa\Contracts\SsoAsyncLoginContract;
 use Shenasa\Contracts\SsoCallbackFailureContract;
 use Shenasa\Contracts\SsoLoginContract;
 use Shenasa\Contracts\SsoUserFinderContract;
@@ -18,6 +17,30 @@ use Shenasa\Facades\Sso;
 
 class SsoAuthController extends BaseController
 {
+    public SsoUserFinderContract         $userFinderAction;
+    public SsoActiveUserProviderContract $ssoActiveUserProviderAction;
+    public SsoLogoutContract             $logoutAction;
+    public SsoLoginContract              $ssoLoginAction;
+
+    /**
+     * @param \Shenasa\Contracts\SsoUserFinderContract         $userFinderAction
+     * @param \Shenasa\Contracts\SsoActiveUserProviderContract $ssoActiveUserProviderAction
+     * @param \Shenasa\Contracts\SsoLogoutContract             $logoutAction
+     * @param \Shenasa\Contracts\SsoLoginContract              $ssoLoginAction
+     */
+    public function __construct(
+        SsoUserFinderContract         $userFinderAction,
+        SsoActiveUserProviderContract $ssoActiveUserProviderAction,
+        SsoLogoutContract             $logoutAction,
+        SsoLoginContract              $ssoLoginAction,
+    )
+    {
+        $this->userFinderAction            = $userFinderAction;
+        $this->ssoActiveUserProviderAction = $ssoActiveUserProviderAction;
+        $this->logoutAction                = $logoutAction;
+        $this->ssoLoginAction              = $ssoLoginAction;
+    }
+
     /**
      * @return \Illuminate\Http\RedirectResponse
      */
@@ -39,15 +62,13 @@ class SsoAuthController extends BaseController
     }
 
     /**
-     * @param \Illuminate\Http\Request                 $request
-     * @param \Shenasa\Contracts\SsoUserFinderContract $userFinderAction
-     * @param \Shenasa\Contracts\SsoAsyncLoginContract $asyncLoginAction
+     * @param \Illuminate\Http\Request $request
      * @return mixed
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
      * @throws \Shenasa\Exceptions\LoginException
      * @throws \Shenasa\Exceptions\UnhandledException
      */
-    public function verifyLogin(Request $request, SsoUserFinderContract $userFinderAction, SsoAsyncLoginContract $asyncLoginAction)
+    public function verifyLogin(Request $request)
     {
         validator()
             ->make($request->all(), [
@@ -59,12 +80,12 @@ class SsoAuthController extends BaseController
         $state = $request->input('state');
         $code  = $request->input('code');
 
-        $userInfo = Sso::validateLoginCode($state, $code, $userFinderAction);
+        $userInfo = Sso::validateLoginCode($state, $code, $this->userFinderAction);
 
         if (!!$userInfo) {
             try {
                 [$user, $username, $identifyCode] = $userInfo;
-                return call_user_func($asyncLoginAction, $request, $user, $username, $identifyCode);
+                return call_user_func($this->ssoLoginAction, $request, $user, $username, $identifyCode);
             } catch (Exception) {
                 throw new LoginException;
             }
@@ -76,36 +97,33 @@ class SsoAuthController extends BaseController
     /**
      * @return void
      */
-    public function logout(SsoActiveUserProviderContract $ssoActiveUserProviderAction, SsoLogout $logoutAction)
+    public function logout()
     {
-        [$user, $username, $identifyCode] = call_user_func($ssoActiveUserProviderAction);
+        [$user, $username, $identifyCode] = call_user_func($this->ssoActiveUserProviderAction);
         $loggedOut = Sso::logout($username, $identifyCode);
 
         if ($loggedOut) {
-            return call_user_func($logoutAction, $user, $username, $identifyCode);
+            return call_user_func($this->logoutAction, $user, $username, $identifyCode);
         }
     }
 
     /**
-     * @param \Illuminate\Http\Request                  $request
-     * @param \Shenasa\Actions\SsoUserFinderAction      $userFinderAction
-     * @param \Shenasa\Actions\SsoLogin                 $ssoLoginAction
-     * @param \Shenasa\Actions\SsoCallbackFailureAction $callbackFailureAction
+     * @param \Illuminate\Http\Request $request
      * @return mixed
-     * @throws \Shenasa\Exceptions\UnhandledException
      * @throws \Shenasa\Exceptions\LoginException
+     * @throws \Shenasa\Exceptions\UnhandledException
      */
-    public function callback(Request $request, SsoUserFinderContract $userFinderAction, SsoLoginContract $ssoLoginAction, SsoCallbackFailureContract $callbackFailureAction)
+    public function callback(Request $request)
     {
         $state = $request->get('state');
         $code  = $request->get('code');
 
-        $userInfo = Sso::validateLoginCode($state, $code, $userFinderAction);
+        $userInfo = Sso::validateLoginCode($state, $code, $this->userFinderAction);
 
         if (!!$userInfo) {
             try {
                 [$user, $username, $identifyCode] = $userInfo;
-                return call_user_func($ssoLoginAction, $request, $user, $username, $identifyCode);
+                return call_user_func($this->ssoLoginAction, $request, $user, $username, $identifyCode);
             } catch (Exception) {
                 throw new LoginException;
             }

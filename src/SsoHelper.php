@@ -13,11 +13,10 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
-use Shenasa\Actions\SsoActiveUserProviderAction;
-use Shenasa\Actions\SsoCallbackFailureAction;
-use Shenasa\Actions\SsoLogin;
-use Shenasa\Actions\SsoLogout;
-use Shenasa\Actions\SsoUserFinderAction;
+use Shenasa\Contracts\SsoActiveUserProviderContract;
+use Shenasa\Contracts\SsoLoginContract;
+use Shenasa\Contracts\SsoLogoutContract;
+use Shenasa\Contracts\SsoUserFinderContract;
 use Shenasa\Exceptions\AttemptLoggerException;
 use Shenasa\Exceptions\CallbackResponseException;
 use Shenasa\Exceptions\CertificateProviderException;
@@ -116,7 +115,7 @@ class SsoHelper
      */
     public function findUserUsing(string $callback): void
     {
-        app()->singleton(SsoUserFinderAction::class, $callback);
+        app()->singleton(SsoUserFinderContract::class, $callback);
     }
 
     /**
@@ -127,7 +126,7 @@ class SsoHelper
      */
     public function loginUsing(string $callback): void
     {
-        app()->singleton(SsoLogin::class, $callback);
+        app()->singleton(SsoLoginContract::class, $callback);
     }
 
     /**
@@ -138,7 +137,7 @@ class SsoHelper
      */
     public function logoutUsing(string $callback): void
     {
-        app()->singleton(SsoLogout::class, $callback);
+        app()->singleton(SsoLogoutContract::class, $callback);
     }
 
     /**
@@ -149,16 +148,7 @@ class SsoHelper
      */
     public function provideActiveUserUsing(string $callback): void
     {
-        app()->singleton(SsoActiveUserProviderAction::class, $callback);
-    }
-
-    /**
-     * @param string $callback
-     * @return void
-     */
-    public function callbackFailureHandlerUsing(string $callback): void
-    {
-        app()->singleton(SsoCallbackFailureAction::class, $callback);
+        app()->singleton(SsoActiveUserProviderContract::class, $callback);
     }
 
     /**
@@ -193,11 +183,11 @@ class SsoHelper
     }
 
     /**
-     *      * Validates response code.
+     * Validates response code.
      * Returns attempt type, user, username and identify code with successful validation and false with unsuccessful validation
-     * @param                                      $state
-     * @param                                      $code
-     * @param \Shenasa\Actions\SsoUserFinderAction $userFinderAction
+     * @param                                          $state
+     * @param                                          $code
+     * @param \Shenasa\Contracts\SsoUserFinderContract $userFinderAction
      * @return bool|array
      * @throws \Shenasa\Exceptions\CallbackResponseException
      * @throws \Shenasa\Exceptions\InvalidAttemptException
@@ -208,7 +198,7 @@ class SsoHelper
      * @throws \Shenasa\Exceptions\TokenParserException
      * @throws \Throwable
      */
-    public function validateLoginCode($state, $code, SsoUserFinderAction $userFinderAction): bool|array
+    public function validateLoginCode($state, $code, SsoUserFinderContract $userFinderAction): bool|array
     {
         $ssoAttempt = SsoAttempt::where('state', (string)$state)
                                 ->whereNull('is_successful')
