@@ -6,6 +6,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Redirect;
+use Sela\Attributes\SelaProcess;
 use Shenasa\Contracts\SsoLogoutContract;
 use Shenasa\Contracts\SsoActiveUserProviderContract;
 use Shenasa\Contracts\SsoLoginContract;
@@ -43,6 +44,10 @@ class SsoAuthController extends BaseController
     /**
      * @return \Illuminate\Http\RedirectResponse
      */
+    #[SelaProcess([
+        'name' => 'sso_login_redirect',
+        'info' => 'Generate new url for sso login and redirect user to it'
+    ])]
     public function loginRedirect()
     {
         return Redirect::to(
@@ -53,6 +58,10 @@ class SsoAuthController extends BaseController
     /**
      * @return \Illuminate\Http\JsonResponse
      */
+    #[SelaProcess([
+        'name' => 'sso_get_login',
+        'info' => 'Generate and return new url for sso login'
+    ])]
     public function getLogin()
     {
         return response()->json([
@@ -67,6 +76,14 @@ class SsoAuthController extends BaseController
      * @throws \Shenasa\Exceptions\LoginException
      * @throws \Shenasa\Exceptions\UnhandledException
      */
+    #[SelaProcess([
+        'name' => 'sso_verify_login',
+        'info' => 'Verify user sso login by callback api',
+        'data_tags' => [
+            ['name' => 'state', 'info' => 'State value of sso login'],
+            ['name' => 'code', 'info' => 'Code value of sso login']
+        ]
+    ])]
     public function verifyLogin(Request $request)
     {
         validator()
@@ -96,6 +113,10 @@ class SsoAuthController extends BaseController
     /**
      * @return void
      */
+    #[SelaProcess([
+        'name' => 'sso_logout',
+        'info' => 'Logout from sso server'
+    ])]
     public function logout()
     {
         [$user, $username, $identifyCode] = call_user_func($this->ssoActiveUserProviderAction);
@@ -112,6 +133,10 @@ class SsoAuthController extends BaseController
      * @throws \Shenasa\Exceptions\LoginException
      * @throws \Shenasa\Exceptions\UnhandledException
      */
+    #[SelaProcess([
+        'name' => 'sso_callback',
+        'info' => 'Verify user sso login by callback page'
+    ])]
     public function callback(Request $request)
     {
         $state = $request->get('state');

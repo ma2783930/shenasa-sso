@@ -10,6 +10,7 @@ return [
     'middlewares' => [
         'auth' => env('SSO_AUTH_GUARD', 'auth:sanctum'),
         'web'  => env('SSO_WEB_MIDDLEWARE', true),
+        'sela' => env('SSO_SELA_MIDDLEWARE', true)
     ],
     'routes'      => [
         'login_get'      => env('SSO_LOGIN_ROUTE', 'sso-login'),
