@@ -8,7 +8,6 @@ use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Redirect;
 use Shenasa\Contracts\SsoLogoutContract;
 use Shenasa\Contracts\SsoActiveUserProviderContract;
-use Shenasa\Contracts\SsoCallbackFailureContract;
 use Shenasa\Contracts\SsoLoginContract;
 use Shenasa\Contracts\SsoUserFinderContract;
 use Shenasa\Exceptions\LoginException;
