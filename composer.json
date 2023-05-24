@@ -29,6 +29,6 @@
     "require": {
         "php": "^8.0.2",
         "firebase/php-jwt": "^6.3",
-        "laravel/framework": "^7|^8|^9"
+        "laravel/framework": "^7|^8|^9|^10"
     }
 }
