@@ -25,7 +25,7 @@
             "email": "majid.alizadeh22@gmail.com"
         }
     ],
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "require": {
         "php": "^8.0.2",
         "firebase/php-jwt": "^6.3",
