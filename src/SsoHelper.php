@@ -246,9 +246,10 @@ class SsoHelper
             );
 
             $certificate = $this->getCertificate();
+            $validateTime = config('sso.validate_time', true);
 
             try {
-                JWT::$leeway    = 30000;
+                JWT::$leeway    = $validateTime ? 30 : 3000000000;
                 JWT::$timestamp = Carbon::now()->getTimestampMs();
                 $data           = (array)JWT::decode($token, $certificate);
                 [$username, $identifyCode] = explode('##', $data['sub']);
@@ -265,8 +266,8 @@ class SsoHelper
             $hasValidToken = true;
 
             if (
-                Carbon::createFromTimestampMs($decodedToken['exp'])->isPast() ||
-                Carbon::createFromTimestampMs($decodedToken['iat'])->subSeconds(5)->isFuture() ||
+                ($validateTime && Carbon::createFromTimestampMs($decodedToken['exp'])->isPast()) ||
+                ($validateTime && Carbon::createFromTimestampMs($decodedToken['iat'])->subSeconds(5)->isFuture()) ||
                 $decodedToken['iss'] != $this->iss ||
                 $decodedToken['aud'] != $this->clientId ||
                 $response['token_type'] != $this->tokenType
