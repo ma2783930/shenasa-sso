@@ -32,8 +32,12 @@ class SsoServiceProvider extends ServiceProvider
             __DIR__ . '/../../config/sso.php' => config_path('sso.php')
         ], 'shenasa-sso');
 
-        $this->loadMigrationsFrom(__DIR__ . '/../../database/migrations');
         $this->loadTranslationsFrom(__DIR__ . '/../../lang', 'sso');
         $this->loadRoutesFrom(__DIR__ . '/../../routes/web.php');
+
+        $loadMigrations = config('sso.load_migrations', false);
+        if ($loadMigrations) {
+            $this->loadMigrationsFrom(__DIR__ . '/../../database/migrations');
+        }
     }
 }
