@@ -245,7 +245,7 @@ class SsoHelper
                 true
             );
 
-            $certificate = $this->getCertificate();
+            $certificate  = $this->getCertificate();
             $validateTime = config('sso.validate_time', true);
 
             try {
@@ -266,13 +266,21 @@ class SsoHelper
             $hasValidToken = true;
 
             if (
-                ($validateTime && Carbon::createFromTimestampMs($decodedToken['exp'])->isPast()) ||
-                ($validateTime && Carbon::createFromTimestampMs($decodedToken['iat'])->subSeconds(5)->isFuture()) ||
                 $decodedToken['iss'] != $this->iss ||
                 $decodedToken['aud'] != $this->clientId ||
                 $response['token_type'] != $this->tokenType
             ) {
                 $hasValidToken = false;
+            }
+
+            if (
+                $validateTime && (
+                    Carbon::createFromTimestampMs($decodedToken['exp'])->isPast() ||
+                    Carbon::createFromTimestampMs($decodedToken['iat'])->subSeconds(5)->isFuture()
+                )
+            ) {
+                $hasValidToken = false;
+
             }
 
             $hasValidUser = !!$user;
