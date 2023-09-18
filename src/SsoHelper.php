@@ -265,22 +265,24 @@ class SsoHelper
 
             $hasValidToken = true;
 
-            if (
-                $decodedToken['iss'] != $this->iss ||
-                $decodedToken['aud'] != $this->clientId ||
-                $response['token_type'] != $this->tokenType
-            ) {
-                $hasValidToken = false;
-            }
+            if ($validateTime) {
+                if (
+                    $decodedToken['iss'] != $this->iss ||
+                    $decodedToken['aud'] != $this->clientId ||
+                    $response['token_type'] != $this->tokenType
+                ) {
+                    $hasValidToken = false;
+                }
 
-            if (
-                $validateTime && (
-                    Carbon::createFromTimestampMs($decodedToken['exp'])->isPast() ||
-                    Carbon::createFromTimestampMs($decodedToken['iat'])->subSeconds(5)->isFuture()
-                )
-            ) {
-                $hasValidToken = false;
+                if (
+                    //$validateTime && (
+                        Carbon::createFromTimestampMs($decodedToken['exp'])->isPast() ||
+                        Carbon::createFromTimestampMs($decodedToken['iat'])->subSeconds(5)->isFuture()
+                    //)
+                ) {
+                    $hasValidToken = false;
 
+                }
             }
 
             $hasValidUser = !!$user;
